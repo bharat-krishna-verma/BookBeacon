@@ -1,22 +1,17 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "server/index-prod.ts",
-            "use": "@vercel/node"
+    "buildCommand": "npm run build:backend",
+    "installCommand": "npm install",
+    "outputDirectory": "dist",
+    "functions": {
+        "dist/index.js": {
+            "runtime": "nodejs20.x"
         }
-    ],
+    },
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "server/index-prod.ts",
-            "methods": [
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
-            ]
+            "dest": "/dist/index.js"
         }
     ],
     "env": {
