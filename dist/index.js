@@ -4,16 +4,8 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// server/index-prod.ts
-import fs from "node:fs";
-import path from "node:path";
-import express2 from "express";
-
 // server/app.ts
 import express from "express";
-
-// server/routes.ts
-import { createServer } from "http";
 
 // shared/schema.ts
 var schema_exports = {};
@@ -154,87 +146,6 @@ var storage = new DatabaseStorage();
 // server/routes.ts
 import { ClerkExpressWithAuth, clerkClient } from "@clerk/clerk-sdk-node";
 import { z as z2 } from "zod";
-async function registerRoutes(app2) {
-  app2.get("/api/auth/user", ClerkExpressWithAuth(), async (req, res) => {
-    try {
-      if (!req.auth.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      const userId = req.auth.userId;
-      let user = await storage.getUser(userId);
-      if (!user) {
-        const clerkUser = await clerkClient.users.getUser(userId);
-        const email = clerkUser.emailAddresses[0]?.emailAddress || "no-email@example.com";
-        user = await storage.upsertUser({
-          id: userId,
-          email,
-          firstName: clerkUser.firstName || "User",
-          lastName: clerkUser.lastName || "",
-          profileImageUrl: clerkUser.imageUrl || ""
-        });
-      }
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-  app2.get("/api/occupancy", ClerkExpressWithAuth(), async (req, res) => {
-    if (!req.auth.userId) return res.status(401).json({ error: "Unauthorized" });
-    try {
-      const stats = await storage.calculateOccupancy();
-      res.json(stats);
-    } catch (error) {
-      console.error("Error calculating occupancy:", error);
-      res.status(500).json({ error: "Failed to calculate occupancy" });
-    }
-  });
-  app2.get("/api/rfid-logs", ClerkExpressWithAuth(), async (req, res) => {
-    if (!req.auth.userId) return res.status(401).json({ error: "Unauthorized" });
-    try {
-      const logs = await storage.getTodayLogs();
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching RFID logs:", error);
-      res.status(500).json({ error: "Failed to fetch RFID logs" });
-    }
-  });
-  app2.post("/api/rfid-logs", ClerkExpressWithAuth(), async (req, res) => {
-    if (!req.auth.userId) return res.status(401).json({ error: "Unauthorized" });
-    try {
-      const validatedData = insertRfidLogSchema.parse(req.body);
-      const log2 = await storage.addRfidLog(validatedData);
-      res.status(201).json(log2);
-    } catch (error) {
-      if (error instanceof z2.ZodError) {
-        res.status(400).json({ error: "Invalid request data", details: error.errors });
-      } else {
-        console.error("Error adding RFID log:", error);
-        res.status(500).json({ error: "Failed to add RFID log" });
-      }
-    }
-  });
-  app2.get("/api/rfid-logs/simulate", async (req, res) => {
-    try {
-      const count = parseInt(req.query.count) || 1;
-      const results = [];
-      for (let i = 0; i < count; i++) {
-        const actions = ["IN", "OUT"];
-        const action = actions[Math.floor(Math.random() * actions.length)];
-        const userId = `USER${String(Math.floor(Math.random() * 5) + 1).padStart(3, "0")}`;
-        const log2 = await storage.addRfidLog({ userId, action });
-        results.push(log2);
-      }
-      const stats = await storage.calculateOccupancy();
-      res.json({ logs: results, stats });
-    } catch (error) {
-      console.error("Error simulating RFID event:", error);
-      res.status(500).json({ error: "Failed to simulate RFID event" });
-    }
-  });
-  const httpServer = createServer(app2);
-  return httpServer;
-}
 
 // server/app.ts
 function log(message, source = "express") {
@@ -255,7 +166,7 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
-  const path2 = req.path;
+  const path = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -264,8 +175,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path2.startsWith("/api")) {
-      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -277,41 +188,132 @@ app.use((req, res, next) => {
   });
   next();
 });
-async function runApp(setup) {
-  const server = await registerRoutes(app);
-  app.use((err, _req, res, _next) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
-  await setup(app, server);
-  const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-}
 
-// server/index-prod.ts
-async function serveStatic(app2, _server) {
-  const distPath = path.resolve(import.meta.dirname, "public");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
+// server/index-serverless.ts
+import { ClerkExpressWithAuth as ClerkExpressWithAuth2, clerkClient as clerkClient2 } from "@clerk/clerk-sdk-node";
+import { z as z3 } from "zod";
+app.get("/api/auth/user", ClerkExpressWithAuth2(), async (req, res) => {
+  try {
+    if (!req.auth.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = req.auth.userId;
+    let user = await storage.getUser(userId);
+    if (!user) {
+      const clerkUser = await clerkClient2.users.getUser(userId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress || "no-email@example.com";
+      user = await storage.upsertUser({
+        id: userId,
+        email,
+        firstName: clerkUser.firstName || "User",
+        lastName: clerkUser.lastName || "",
+        profileImageUrl: clerkUser.imageUrl || ""
+      });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Failed to fetch user" });
   }
-  app2.use(express2.static(distPath));
-  app2.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
-}
-(async () => {
-  await runApp(serveStatic);
-})();
+});
+app.get("/api/occupancy", ClerkExpressWithAuth2(), async (req, res) => {
+  if (!req.auth.userId) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const stats = await storage.calculateOccupancy();
+    res.json(stats);
+  } catch (error) {
+    console.error("Error calculating occupancy:", error);
+    res.status(500).json({ error: "Failed to calculate occupancy" });
+  }
+});
+app.get("/api/rfid-logs", ClerkExpressWithAuth2(), async (req, res) => {
+  if (!req.auth.userId) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const logs = await storage.getTodayLogs();
+    res.json(logs);
+  } catch (error) {
+    console.error("Error fetching RFID logs:", error);
+    res.status(500).json({ error: "Failed to fetch RFID logs" });
+  }
+});
+app.post("/api/rfid-logs", ClerkExpressWithAuth2(), async (req, res) => {
+  if (!req.auth.userId) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const validatedData = insertRfidLogSchema.parse(req.body);
+    const log2 = await storage.addRfidLog(validatedData);
+    res.status(201).json(log2);
+  } catch (error) {
+    if (error instanceof z3.ZodError) {
+      res.status(400).json({ error: "Invalid request data", details: error.errors });
+    } else {
+      console.error("Error adding RFID log:", error);
+      res.status(500).json({ error: "Failed to add RFID log" });
+    }
+  }
+});
+app.get("/api/rfid-logs/simulate", async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 1;
+    const logs = [];
+    for (let i = 0; i < count; i++) {
+      const currentStats = await storage.calculateOccupancy();
+      const currentOccupancy = currentStats.current;
+      const capacity = currentStats.capacity;
+      const todayLogs = await storage.getTodayLogs();
+      const userStates = /* @__PURE__ */ new Map();
+      todayLogs.forEach((log3) => {
+        userStates.set(log3.userId, log3.action);
+      });
+      const usersInside = Array.from(userStates.entries()).filter(([_, action2]) => action2 === "IN").map(([userId2, _]) => userId2);
+      let userId;
+      let action;
+      if (currentOccupancy === 0) {
+        userId = `USER${String(Math.floor(Math.random() * 20) + 1).padStart(3, "0")}`;
+        action = "IN";
+      } else if (currentOccupancy >= capacity * 0.9) {
+        if (usersInside.length > 0) {
+          userId = usersInside[Math.floor(Math.random() * usersInside.length)];
+          action = "OUT";
+        } else {
+          userId = `USER${String(Math.floor(Math.random() * 20) + 1).padStart(3, "0")}`;
+          action = "IN";
+        }
+      } else {
+        const shouldEnter = currentOccupancy < capacity * 0.3 ? Math.random() < 0.7 : Math.random() < 0.6;
+        if (shouldEnter) {
+          userId = `USER${String(Math.floor(Math.random() * 20) + 1).padStart(3, "0")}`;
+          action = "IN";
+        } else {
+          if (usersInside.length > 0) {
+            userId = usersInside[Math.floor(Math.random() * usersInside.length)];
+            action = "OUT";
+          } else {
+            userId = `USER${String(Math.floor(Math.random() * 20) + 1).padStart(3, "0")}`;
+            action = "IN";
+          }
+        }
+      }
+      const log2 = await storage.addRfidLog({ userId, action });
+      logs.push(log2);
+    }
+    const stats = await storage.calculateOccupancy();
+    res.json({ logs, stats });
+  } catch (error) {
+    console.error("Error simulating RFID event:", error);
+    res.status(500).json({ error: "Failed to simulate RFID event" });
+  }
+});
+app.get("/api/rfid", (req, res) => {
+  const userId = `USER${String(Math.floor(Math.random() * 20) + 1).padStart(3, "0")}`;
+  const action = Math.random() > 0.5 ? "IN" : "OUT";
+  res.json({ userId, action });
+});
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
+});
+var index_serverless_default = app;
 export {
-  serveStatic
+  index_serverless_default as default
 };
