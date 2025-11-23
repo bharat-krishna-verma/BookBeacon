@@ -1,4 +1,4 @@
-import { type RfidLog, type InsertRfidLog, type OccupancyStats, type User, type UpsertUser, rfidLogs, users } from "@shared/schema";
+import { type RfidLog, type InsertRfidLog, type OccupancyStats, type User, type UpsertUser, rfidLogs, users } from "../shared/schema";
 import { db } from "./db";
 import { eq, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -7,7 +7,7 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   // RFID operations
   addRfidLog(log: InsertRfidLog): Promise<RfidLog>;
   getRfidLogs(): Promise<RfidLog[]>;
@@ -56,7 +56,7 @@ export class DatabaseStorage implements IStorage {
   async getTodayLogs(): Promise<RfidLog[]> {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     return await db
       .select()
       .from(rfidLogs)
@@ -66,7 +66,7 @@ export class DatabaseStorage implements IStorage {
 
   async calculateOccupancy(): Promise<OccupancyStats> {
     const todayLogs = await this.getTodayLogs();
-    
+
     const userStates = new Map<string, string>();
     let peakOccupancy = 0;
     let currentOccupancy = 0;
@@ -92,7 +92,7 @@ export class DatabaseStorage implements IStorage {
 
     const current = Array.from(userStates.values()).filter((state) => state === "IN").length;
     const percentage = Math.round((current / this.CAPACITY) * 100);
-    
+
     let status: "low" | "medium" | "high" = "low";
     if (percentage >= 70) {
       status = "high";
