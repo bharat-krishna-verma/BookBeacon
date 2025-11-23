@@ -127,7 +127,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="text-xl font-bold gradient-text" data-testid="text-header-title">
-                Library Occupancy
+                BookBeacon
               </h1>
               <p className="text-xs text-muted-foreground">
                 Real-time visitor tracking
