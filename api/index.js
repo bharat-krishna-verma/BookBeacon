@@ -1,8 +1,16 @@
-import { app } from '../server/app.js';
-import { registerRoutes } from '../server/routes.js';
+// Vercel Serverless Function Entry Point
+const { app } = require('../server/app.js');
+const { registerRoutes } = require('../server/routes.js');
 
-// Initialize routes for serverless function
-await registerRoutes(app);
+let initialized = false;
 
-// Export the Express app as a serverless function
-export default app;
+module.exports = async (req, res) => {
+    // Initialize routes once
+    if (!initialized) {
+        await registerRoutes(app);
+        initialized = true;
+    }
+
+    // Handle the request with Express
+    return app(req, res);
+};
