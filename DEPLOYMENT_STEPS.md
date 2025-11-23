@@ -5,7 +5,7 @@
 ### Step 1: Commit and Push Changes
 ```bash
 git add .
-git commit -m "Configure separate backend deployment"
+git commit -m "Configure Vercel deployment"
 git push origin main
 ```
 
@@ -14,9 +14,10 @@ git push origin main
 2. Import repository: `bharat-krishna-verma/BookBeacon`
 3. **Project Name**: `librarylive-backend`
 4. **Framework**: Other
-5. **Build Command**: `npm run build:backend`
-6. **Output Directory**: `dist`
-7. **Install Command**: `npm install`
+5. **Root Directory**: Leave as `.` (root)
+6. **Build Command**: Leave empty (no build needed for backend)
+7. **Output Directory**: Leave empty
+8. **Install Command**: `npm install`
 
 ### Step 3: Add Environment Variables
 Add these in Vercel dashboard (get values from your local `.env` file):
@@ -38,7 +39,7 @@ After deployment, copy your backend URL (e.g., `https://librarylive-backend.verc
 ## Frontend Deployment (Deploy After Backend!)
 
 ### Step 1: Update Frontend Configuration
-Edit `vercel.frontend.json` line 24 with your actual backend URL:
+Edit `vercel.frontend.json` line 7 with your actual backend URL:
 ```json
 "destination": "https://YOUR-BACKEND-URL.vercel.app/api/:path*"
 ```
@@ -55,9 +56,10 @@ git push origin main
 2. Import **same repository**: `bharat-krishna-verma/BookBeacon`
 3. **Project Name**: `librarylive-frontend`
 4. **Framework**: Vite
-5. **Build Command**: `npm run build:frontend`
-6. **Output Directory**: `dist/public`
-7. **Install Command**: `npm install`
+5. **Root Directory**: Leave as `.` (root)
+6. **Build Command**: `npm run build:frontend`
+7. **Output Directory**: `dist/public`
+8. **Install Command**: `npm install`
 
 ### Step 3: Add Environment Variables
 ```
@@ -88,3 +90,15 @@ Click "Deploy" and wait for completion.
 ## Testing
 - Backend: Visit `https://your-backend-url.vercel.app/api/rfid`
 - Frontend: Visit `https://your-frontend-url.vercel.app`
+
+## Architecture Notes
+
+The backend uses Vercel's serverless functions:
+- API routes are handled by `/api/index.js`
+- Express app is initialized in the serverless function
+- No build step required - Vercel handles the serverless function automatically
+
+The frontend is a static Vite build:
+- Built to `dist/public`
+- API calls are proxied to the backend via Vercel rewrites
+- SPA routing handled by fallback to `index.html`
