@@ -28,7 +28,8 @@ export default function Dashboard() {
     queryKey: ["/api/occupancy"],
     queryFn: async () => {
       const token = await getToken();
-      const res = await fetch("/api/occupancy", {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/occupancy`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -150,7 +151,8 @@ export default function Dashboard() {
                   size="sm"
                   onClick={async () => {
                     try {
-                      await fetch("/api/rfid-logs/simulate?count=5");
+                      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                      await fetch(`${apiUrl}/api/rfid-logs/simulate?count=5`);
                       queryClient.invalidateQueries({ queryKey: ["/api/occupancy"] });
                     } catch (err) {
                       console.error("Simulation failed", err);
@@ -193,45 +195,73 @@ export default function Dashboard() {
 
           {/* Right - Main Occupancy Card */}
           <Card className="border-2 glass-strong gradient-border glow-purple" data-testid="card-main-occupancy">
-            <CardContent className="p-8">
-              <div className="space-y-6">
-                {/* Pie Chart */}
-                <div className="flex justify-center">
-                  <OccupancyPieChart current={stats.current} capacity={stats.capacity} />
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center glow-purple">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-bold gradient-text">
+                      Current Occupancy
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Real-time visitor tracking
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  className="gap-1.5 px-2.5 py-0.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-500/30 animate-pulse"
+                >
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 glow-cyan" />
+                  <span className="text-xs font-medium text-emerald-300">Live</span>
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="px-6 pb-6 pt-0">
+              <div className="space-y-4">
+                {/* Pie Chart - Smaller */}
+                <div className="flex justify-center -mt-2">
+                  <div className="scale-90">
+                    <OccupancyPieChart current={stats.current} capacity={stats.capacity} />
+                  </div>
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <p className="text-base font-medium text-muted-foreground mb-2">
+                <div className="space-y-4">
+                  <div className="text-center -mt-4">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
                       People Currently Inside
                     </p>
-                    <div className="text-6xl font-bold gradient-text tabular-nums">
+                    <div className="text-5xl font-bold gradient-text tabular-nums">
                       {stats.current}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      of {stats.capacity} capacity
+                    </p>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Capacity</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Capacity Utilization</span>
                       <span className="font-medium text-foreground">
-                        {stats.percentage}% ({stats.current} / {stats.capacity})
+                        {stats.percentage}%
                       </span>
                     </div>
                     <div className="relative">
                       <Progress
                         value={stats.percentage}
-                        className="h-4 glass"
+                        className="h-3 glass"
                         data-testid="progress-capacity"
                       />
                       <div
-                        className={`absolute inset-0 h-4 rounded-full bg-gradient-to-r ${getStatusColor(stats.status)} opacity-70 transition-all`}
+                        className={`absolute inset-0 h-3 rounded-full bg-gradient-to-r ${getStatusColor(stats.status)} opacity-70 transition-all`}
                         style={{ width: `${stats.percentage}%` }}
                       />
                     </div>
                     <div className="flex justify-center">
                       <Badge
-                        className={`px-6 py-2 text-sm font-semibold bg-gradient-to-r ${getStatusColor(stats.status)} border-0 text-white`}
+                        className={`px-4 py-1 text-xs font-semibold bg-gradient-to-r ${getStatusColor(stats.status)} border-0 text-white`}
                         data-testid="badge-capacity-status"
                       >
                         {getStatusText(stats.status)}
@@ -239,9 +269,25 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-white/10">
-                    <p className="text-sm text-muted-foreground text-center" data-testid="text-last-updated">
-                      Last updated: {new Date(stats.lastUpdated).toLocaleTimeString()}
+                  {/* Additional Stats - More Compact */}
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+                    <div className="text-center p-2 rounded-lg glass">
+                      <p className="text-xs text-muted-foreground mb-0.5">Available</p>
+                      <p className="text-xl font-bold gradient-text">
+                        {stats.capacity - stats.current}
+                      </p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg glass">
+                      <p className="text-xs text-muted-foreground mb-0.5">Peak</p>
+                      <p className="text-xl font-bold gradient-text">
+                        {stats.peak}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10">
+                    <p className="text-xs text-muted-foreground text-center" data-testid="text-last-updated">
+                      Updated: {new Date(stats.lastUpdated).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>

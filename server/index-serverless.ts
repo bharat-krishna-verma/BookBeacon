@@ -2,7 +2,7 @@ import { app } from "./app";
 import type { Express } from "express";
 import { storage } from "./storage";
 import { ClerkExpressWithAuth, clerkClient } from "@clerk/clerk-sdk-node";
-import { insertRfidLogSchema } from "../shared/schema";
+import { insertRfidLogSchema } from "./shared/schema";
 import { z } from "zod";
 
 // Register all routes directly on the app (without creating HTTP server)

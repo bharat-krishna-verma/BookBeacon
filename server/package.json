@@ -1,0 +1,44 @@
+{
+    "name": "library-live-server",
+    "version": "1.0.0",
+    "type": "module",
+    "license": "MIT",
+    "scripts": {
+        "dev": "tsx index-dev.ts",
+        "build": "npx esbuild index-serverless.ts --platform=node --bundle --format=esm --outfile=dist/index.js --packages=external",
+        "start": "node dist/index.js",
+        "check": "tsc",
+        "db:push": "drizzle-kit push",
+        "db:seed": "tsx seed.ts"
+    },
+    "dependencies": {
+        "@clerk/clerk-sdk-node": "^4.13.23",
+        "@jridgewell/trace-mapping": "^0.3.25",
+        "@neondatabase/serverless": "^0.10.4",
+        "@types/memoizee": "^0.4.12",
+        "@types/pg": "^8.15.6",
+        "dotenv": "^17.2.3",
+        "drizzle-orm": "^0.39.1",
+        "drizzle-zod": "^0.7.0",
+        "express": "^4.21.2",
+        "memorystore": "^1.6.7",
+        "pg": "^8.16.3",
+        "ws": "^8.18.0",
+        "zod": "^3.24.2",
+        "zod-validation-error": "^3.4.0"
+    },
+    "devDependencies": {
+        "@types/express": "4.17.21",
+        "@types/node": "20.16.11",
+        "@types/ws": "^8.5.13",
+        "drizzle-kit": "^0.31.4",
+        "esbuild": "^0.25.0",
+        "nanoid": "^5.0.0",
+        "tsx": "^4.20.5",
+        "typescript": "5.6.3",
+        "vite": "^5.4.20"
+    },
+    "optionalDependencies": {
+        "bufferutil": "^4.0.8"
+    }
+}

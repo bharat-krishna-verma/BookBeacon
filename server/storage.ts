@@ -1,4 +1,4 @@
-import { type RfidLog, type InsertRfidLog, type OccupancyStats, type User, type UpsertUser, rfidLogs, users } from "../shared/schema";
+import { type RfidLog, type InsertRfidLog, type OccupancyStats, type User, type UpsertUser, rfidLogs, users } from "./shared/schema";
 import { db } from "./db";
 import { eq, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
